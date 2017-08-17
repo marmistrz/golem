@@ -1,28 +1,31 @@
+import jsonobject
 import logging
+from typing import Optional
 
 from golem.core.hostaddress import get_host_address, get_external_address, get_host_addresses
 
 logger = logging.getLogger(__name__)
 
 
-class Node(object):
-    def __init__(self, node_name=None, key=None, prv_addr=None, prv_port=None, pub_addr=None, pub_port=None,
-                 nat_type=None, p2p_prv_port=None, p2p_pub_port=None):
-        self.node_name = node_name
-        self.key = key
-        # task server ports
-        self.prv_port = prv_port
-        self.pub_port = pub_port
-        # p2p server ports
-        self.p2p_prv_port = p2p_prv_port
-        self.p2p_pub_port = p2p_pub_port
-        # addresses
-        self.prv_addr = prv_addr
-        self.pub_addr = pub_addr
-        self.prv_addresses = []
+class Node(jsonobject.JsonObject):
 
-        self.nat_type = nat_type
-        self.port_status = None
+    node_name = jsonobject.StringProperty()
+    key = jsonobject.StringProperty()
+
+    # task server ports
+    prv_port = jsonobject.IntegerProperty()
+    pub_port = jsonobject.IntegerProperty()
+    # p2p server ports
+    p2p_prv_port = jsonobject.IntegerProperty()
+    p2p_pub_port = jsonobject.IntegerProperty()
+    # addresses
+
+    prv_addr = jsonobject.StringProperty()
+    pub_addr = jsonobject.StringProperty()
+    prv_addresses = jsonobject.ListProperty()
+
+    nat_type = jsonobject.StringProperty()
+    port_status = jsonobject.StringProperty()
 
     def collect_network_info(self, seed_host=None, use_ipv6=False):
         if not self.pub_addr:

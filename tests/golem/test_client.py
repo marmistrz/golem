@@ -126,7 +126,7 @@ class TestClient(TestWithDatabase):
         incomes = [
             ExpectedIncome(
                 sender_node=random_hex_str(),
-                sender_node_details={},
+                sender_node_details=Node(),
                 task=random_hex_str(),
                 subtask=random_hex_str(),
                 value=i * 10 ** 18,
