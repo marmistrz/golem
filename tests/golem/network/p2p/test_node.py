@@ -35,3 +35,10 @@ class TestNode(unittest.TestCase):
         assert is_ip_address(node.prv_addr)
         for address in node.prv_addresses:
             assert is_ip_address(address)
+
+    def test_json(self):
+        "Test serialization and deserialization"
+        n = Node(node_name="Blabla", key="ABC")
+        jsonstr = n.to_json()
+        n_deser = Node.from_json(jsonstr)
+        self.assertEqual(n.__dict__, n_deser.__dict__)

@@ -33,7 +33,7 @@ class JSONDictSerializer:
         return json.dumps(obj)
 
 
-class DictCoder(object):
+class DictCoder:
 
     cls_key = 'py/object'
     deep_serialization = True
@@ -159,7 +159,7 @@ class CBORCoder(DictCoder):
         return obj
 
 
-class DictSerializer(object):
+class DictSerializer:
     """ Serialize and deserialize objects to a dictionary"""
     @staticmethod
     def dump(obj, typed=True):
@@ -182,7 +182,7 @@ class DictSerializer(object):
         return DictCoder.from_dict(dictionary, as_class=as_class)
 
 
-class CBORSerializer(object):
+class CBORSerializer:
     """ Serialize and deserialize objects to and from CBOR"""
     decoders = dict()
     decoders[CBORCoder.tag] = CBORCoder.decode
