@@ -3,25 +3,39 @@ import os
 import shutil
 from threading import Lock
 import time
+from typing import Callable, Any
 
 from golem.core.common import to_unicode
 from golem.docker.task_thread import DockerTaskThread
 from golem.resource.dirmanager import DirManager
 from golem.resource.resource import TaskResourceHeader, decompress_dir
-from golem.task.taskbase import Task, resource_types
+from golem.task.taskbase import Task, ComputeTaskDef, resource_types
 
 logger = logging.getLogger("golem.task")
 
-
-class LocalComputer(object):
+import enforce
+@enforce.runtime_validation
+class LocalComputer:
     DEFAULT_WARNING = "Computation failed"
     DEFAULT_SUCCESS = "Task computation success!"
 
-    def __init__(self, task, root_path, success_callback, error_callback, get_compute_task_def, check_mem=False,
-                 comp_failed_warning=DEFAULT_WARNING, comp_success_message=DEFAULT_SUCCESS, use_task_resources=True,
-                 additional_resources=None):
+    def __init__(
+        self,
+        task: Task,
+        root_path: str,
+        success_callback: Callable[[Any, int], None],
+        error_callback: Callable[[str], None],
+        get_compute_task_def: Callable[[], ComputeTaskDef],
+        check_mem: bool = False,
+        comp_failed_warning: str = DEFAULT_WARNING,
+        comp_success_message: str = DEFAULT_SUCCESS,
+        use_task_resources: bool = True,
+        additional_resources=None
+    ) -> None:
         if not isinstance(task, Task):
-            raise TypeError("Incorrect task type: {}. Should be: Task".format(type(task)))
+            raise TypeError(
+                "Incorrect task type: {}. Should be: Task".format(type(task))
+            )
         self.task = task
         self.res_path = None
         self.tmp_dir = None
@@ -36,6 +50,7 @@ class LocalComputer(object):
         self.comp_failed_warning = comp_failed_warning
         self.comp_success_message = comp_success_message
         self.use_task_resources = use_task_resources
+        self.test_task_res_path = ""
         if additional_resources is None:
             additional_resources = []
         self.additional_resources = additional_resources
@@ -47,7 +62,7 @@ class LocalComputer(object):
         try:
             self.start_time = time.time()
             self.__prepare_tmp_dir()
-            self.__prepare_resources() # makes a copy
+            self.__prepare_resources()  # makes a copy
 
             ctd = self.get_compute_task_def()
 
@@ -82,7 +97,10 @@ class LocalComputer(object):
             self.computation_failure(task_thread)
 
     def is_success(self, task_thread):
-        return not task_thread.error and task_thread.result and task_thread.result.get("data")
+        return \
+            not task_thread.error \
+            and task_thread.result \
+            and task_thread.result.get("data")
 
     def computation_success(self, task_thread):
         self.success_callback(task_thread.result, self._get_time_spent())
@@ -102,19 +120,18 @@ class LocalComputer(object):
 
     def __prepare_resources(self):
 
-        self.test_task_res_path = self.dir_manager.get_task_test_dir("")#self.task.header.task_id)
-        #  get_test_task_path(self.root_path)
+        self.test_task_res_path = self.dir_manager.get_task_test_dir("")
         if not os.path.exists(self.test_task_res_path):
             os.makedirs(self.test_task_res_path)
         else:
             shutil.rmtree(self.test_task_res_path, True)
             os.makedirs(self.test_task_res_path)
 
-        # self.test_task_res_dir = get_test_task_path(self.root_path)
         if self.use_task_resources:
             rh = TaskResourceHeader(self.test_task_res_path)
-            # rh = TaskResourceHeader(self.test_task_res_dir)
-            res_file = self.task.get_resources(rh, resource_types["zip"], self.tmp_dir)
+            res_file = self.task.get_resources(
+                rh, resource_types["zip"], self.tmp_dir
+            )
 
             if res_file:
                 decompress_dir(self.test_task_res_path, res_file)
@@ -130,14 +147,16 @@ class LocalComputer(object):
         os.makedirs(self.tmp_dir)
 
     def _get_task_thread(self, ctd):
-        return DockerTaskThread(self,
-                                ctd.subtask_id,
-                                ctd.docker_images,
-                                ctd.working_directory,
-                                ctd.src_code,
-                                ctd.extra_data,
-                                ctd.short_description,
-                                self.test_task_res_path,
-                                self.tmp_dir,
-                                0,
-                                check_mem=self.check_mem)
+        return DockerTaskThread(
+            self,
+            ctd.subtask_id,
+            ctd.docker_images,
+            ctd.working_directory,
+            ctd.src_code,
+            ctd.extra_data,
+            ctd.short_description,
+            self.test_task_res_path,
+            self.tmp_dir,
+            0,
+            check_mem=self.check_mem
+        )
